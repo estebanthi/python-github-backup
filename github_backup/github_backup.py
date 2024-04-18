@@ -413,6 +413,9 @@ def parse_args(args=None):
     parser.add_argument(
         "--exclude", dest="exclude", help="names of repositories to exclude", nargs="*"
     )
+    parser.add_argument(
+        "--daemon", dest="daemon", help="run as daemon with cron schedule", default=None
+    )
     return parser.parse_args(args)
 
 

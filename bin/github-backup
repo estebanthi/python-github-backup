@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 
+import croniter
+import datetime as dt
 import logging
 import os
 import sys
+import time
 
 from github_backup.github_backup import (
     backup_account,
@@ -23,12 +26,7 @@ logging.basicConfig(
 )
 
 
-def main():
-    args = parse_args()
-
-    if args.quiet:
-        logger.setLevel(logging.WARNING)
-
+def run(args):
     output_directory = os.path.realpath(args.output_directory)
     if not os.path.isdir(output_directory):
         logger.info("Create output directory {0}".format(output_directory))
@@ -52,6 +50,28 @@ def main():
     repositories = filter_repositories(args, repositories)
     backup_repositories(args, output_directory, repositories)
     backup_account(args, output_directory)
+
+
+def main():
+    args = parse_args()
+
+    if args.quiet:
+        logger.setLevel(logging.WARNING)
+
+    if args.daemon:
+        cron = croniter.croniter(args.daemon, dt.datetime.now())
+        next_run = cron.get_next(dt.datetime)
+        logging.info(f"Next run: {next_run}")
+        while True:
+            if dt.datetime.now() >= next_run:
+                run(args)
+                next_run = cron.get_next(dt.datetime)
+                logging.info(f"Next run: {next_run}")
+            else:
+                logging.info(f"Sleeping until {next_run}")
+                time.sleep(next_run.timestamp() - dt.datetime.now().timestamp())
+    else:
+        run(args)
 
 
 if __name__ == "__main__":
